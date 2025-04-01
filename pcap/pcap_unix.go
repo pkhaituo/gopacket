@@ -341,9 +341,9 @@ func pcapLookupnet(device string) (netp, maskp uint32, err error) {
 
 func (b *BPF) pcapOfflineFilter(ci gopacket.CaptureInfo, data []byte) bool {
 	hdr := (*C.struct_pcap_pkthdr)(&b.hdr)
-	hdr.ts.tv_sec = C.gopacket_time_secs_t(ci.Timestamp.Unix())
-	hdr.ts.tv_usec = C.gopacket_time_usecs_t(ci.Timestamp.Nanosecond() / 1000)
-	hdr.caplen = C.bpf_u_int32(len(data)) // Trust actual length over ci.Length.
+	hdr.ts.tv_sec = C.time_t(ci.Timestamp.Unix())      // 强制使用 32 位 time_t
+	hdr.ts.tv_usec = C.suseconds_t(ci.Timestamp.Nanosecond() / 1000)  // 强制使用 32 位 suseconds_t
+	hdr.caplen = C.bpf_u_int32(len(data))
 	hdr.len = C.bpf_u_int32(ci.Length)
 	dataptr := (*C.u_char)(unsafe.Pointer(&data[0]))
 	return C.pcap_offline_filter_escaping((*C.struct_bpf_program)(&b.bpf.bpf),
